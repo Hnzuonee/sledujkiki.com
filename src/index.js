@@ -252,8 +252,9 @@ async function handleRequest(request) {
       </div>
     </div>
 
-    <script>
-        // --- JAVASCRIPT LOGIKA PRO FUNKČNOST STRÁNKY ---
+   <script>
+        // --- ROBUSTNÍ JAVASCRIPT LOGIKA ---
+        
         document.addEventListener('DOMContentLoaded', () => {
             const popupOverlay = document.getElementById('popup-warning');
             const btnBack = document.getElementById('popup-back');
@@ -261,6 +262,34 @@ async function handleRequest(request) {
             const linksWithPopup = document.querySelectorAll('[data-popup="true"]');
 
             let targetUrl = ''; // Proměnná pro uložení cílové URL
+
+            /**
+             * Funkce pro robustní otevření odkazu v externím prohlížeči.
+             * @param {string} url - Cílová URL adresa.
+             */
+            const openRobustly = (url) => {
+                // --- POKUS Č. 1: Agresivní "kliknutí" ---
+                // Toto je nejlepší pokus o "únik". Dynamicky vytvoříme
+                // odkaz, klikneme na něj a hned ho smažeme.
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer'; // Bezpečnostní prvek
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // --- POKUS Č. 2: Záložní přesměrování (Fallback) ---
+                // Tento kód se spustí s malým zpožděním.
+                // - POKUD POKUS Č. 1 ÚSPĚŠNĚ "UNIKL": Uživatel už je v jiné aplikaci
+                //   a toto přesměrování neuvidí nebo se neprovede.
+                // - POKUD POKUS Č. 1 SELHAL: Uživatel je stále v Instagramu.
+                //   Tento kód zajistí, že se alespoň přesměruje na cílovou
+                //   stránku, i když zůstane uvnitř IG webview.
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 200); // 200ms zpoždění
+            };
 
             const openPopup = (url) => {
                 targetUrl = url;
@@ -274,7 +303,7 @@ async function handleRequest(request) {
 
             linksWithPopup.forEach(link => {
                 link.addEventListener('click', (event) => {
-                    event.preventDefault(); 
+                    event.preventDefault();
                     const url = link.dataset.url;
                     if (url) {
                         openPopup(url);
@@ -286,23 +315,24 @@ async function handleRequest(request) {
                 event.preventDefault();
                 closePopup();
             });
-            
+
             popupOverlay.addEventListener('click', (event) => {
               if (event.target === popupOverlay) {
                 closePopup();
               }
             });
 
+            // Tlačítko "Pokračovat" nyní volá naši novou robustní funkci
             btnContinue.addEventListener('click', (event) => {
                 event.preventDefault();
                 if (targetUrl) {
-                    window.open(targetUrl, '_blank');
+                    openRobustly(targetUrl);
                 }
+                // Popup zavřeme hned, aby uživatel viděl, že se něco děje
                 closePopup();
             });
         });
     </script>
-</body>
 </html>
   `;
 
