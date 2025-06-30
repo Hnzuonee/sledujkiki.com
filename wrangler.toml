@@ -1,7 +1,17 @@
-name = "sledujkikicom"
-main = "src/index.js"
-compatibility_date = "2024-06-30"
+# wrangler.toml
+
+# Zvol si název, bude vidět v CF dashboardu. Musí odpovídat názvu Workeru v CF.
+name = "sledujkikicom" 
+
+# Cesta k hlavnímu souboru Workeru
+main = "src/index.js"       
+
+# Datum pro zachování kompatibility s funkcemi Cloudflare
+compatibility_date = "2024-06-30" 
+
+# TENTO ŘÁDEK SMĚRUJE TVOU DOMÉNU NA WORKER
+# Nahraď "odkazy.tvojedomena.cz" svou skutečnou doménou/subdoménou
+route = "www.sledujkiki.com/*"
 
 [observability.logs]
 enabled = true
-
