@@ -1,14 +1,10 @@
-# wrangler.toml
-
-# Zvol si název, bude vidět v CF dashboardu. Musí být unikátní.
-name = "sledujkikicom" 
-# Cesta k hlavnímu souboru Workeru
-main = "src/index.js"       
-# Datum pro zachování kompatibility s funkcemi Cloudflare
+name = "muj-rozcestnik-worker"
+main = "src/index.js"
 compatibility_date = "2024-06-30"
-# wrangler.toml (wrangler v3.88.0^)
+
 [observability.logs]
 enabled = true
 
-
-
+[routes]
+pattern = "www.sledujkiki.com/*"
+custom_domain = true
