@@ -6,3 +6,9 @@ name = "sledujkikicom"
 main = "src/index.js"       
 # Datum pro zachování kompatibility s funkcemi Cloudflare
 compatibility_date = "2024-06-30"
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
+
+
+
