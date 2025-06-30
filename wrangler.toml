@@ -1,8 +1,10 @@
-name              = "sledujkikicom"   # slug viditelný v CF dashboardu
+name              = "sledujkikicom"  # libovolné jméno
 main              = "src/worker.js"
 compatibility_date = "2025-06-30"
 
-# pokud Worker obsluhuje celou subdoménu:
+# nahraď vlastní doménou nebo subdoménou
 route = "www.sledujkiki.com/*"
+
+# žádné KV → blok kv_namespaces se maže
 [observability.logs]
 enabled = true
