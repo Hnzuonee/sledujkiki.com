@@ -14,7 +14,7 @@ export default {
 };
 
 function html () {
-  const FALLBACK_URL = 'https://instagram.com';
+  const FALLBACK_URL = 'https://instagram.com';   // nouzová záloha
 
 return `<!DOCTYPE html>
 <html lang="cs">
@@ -32,17 +32,17 @@ return `<!DOCTYPE html>
 <main class="wrapper">
   <div class="pattern"></div>
   <div class="container">
-    <img class="propic" src="https://minisoft-cdn.pages.dev/sw/images/eva.webp" alt="">
-    <div class="title-wrapper"><h1 class="title">Kiki&nbsp;Booo</h1><img class="badge" src="https://minisoft-cdn.pages.dev/sw/images/badge.svg"></div>
+    <img class="propic" src="https://minisoft-cdn.pages.dev/sw/images/eva.webp" alt="Profilová fotka">
+    <div class="title-wrapper"><h1 class="title">Kiki Booo</h1><img class="badge" src="https://minisoft-cdn.pages.dev/sw/images/badge.svg"></div>
     <p class="paragraph">Modelka <span class="_2nd-paragraph">&amp;</span> digitální tvůrkyně</p>
 
     <div class="w-layout-grid link-list">
-      <!-- ONLYFANS -->
+      <!-- ONLYFANS (jediný odkaz s age‑gate + kick‑out) -->
       <div class="link focus" open-popup="true">
         <div class="popup">
           <div class="popup-content">
             <h1 class="popup-title">Citlivý obsah</h1>
-            <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
+            <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu&nbsp;18&nbsp;+.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
               <button type="button" class="button w-button continue-btn"
@@ -54,7 +54,7 @@ return `<!DOCTYPE html>
         <div class="label">Exkluzivní obsah</div><div class="arrow focus"></div>
       </div>
 
-      <!-- Přímé odkazy -->
+      <!-- Ostatní odkazy (bez popupu, bez kick‑outu) -->
       <a class="link w-inline-block" href="https://t.me/+E-WSR-s-L1EyOTNk">
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/telegram.webp">
         <div class="label">Telegram</div><div class="arrow"></div>
@@ -75,9 +75,10 @@ return `<!DOCTYPE html>
   </div>
 </main>
 
+<!-- fallback návod -->
 <div id="help-msg" style="display:none;text-align:center;padding:1rem;font-size:.9rem;color:#555">
-  Pokud stále vidíš tuto stránku, klepni v Instagramu na <strong>⋮</strong> a vyber
-  <em>„Otevřít v prohlížeči“</em>.
+  Pokud stále vidíš tuto stránku, klepni v&nbsp;Instagramu na <strong>⋮</strong> a&nbsp;vyber
+  <em>„Otevřít v&nbsp;prohlížeči“</em>.
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
@@ -86,78 +87,64 @@ return `<!DOCTYPE html>
 
 <script>
 (() => {
-  const UA        = navigator.userAgent || '';
-  const isiOS     = /iP(hone|od|ad)/i.test(UA);
+  /* ---------- detekce ---------- */
+  const UA = navigator.userAgent || '';
+  const isiOS = /iP(hone|od|ad)/i.test(UA);
   const isAndroid = /Android/i.test(UA);
-  const isIG      = /Instagram/i.test(UA);
+  const isIG = /Instagram/i.test(UA);
 
-  /* ---------- universální open helper ---------- */
-  function clickAnchor(url){
-    const a = document.createElement('a');
-    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    return document.visibilityState === 'hidden';
-  }
+  /* ---------- helpery ---------- */
+  const tryOpen = (url, opts='') => !!window.open(url, '_blank', 'noopener,noreferrer,'+opts);
 
-  /* ---------- schémata ---------- */
-  const intent = (u,pkg)=>
-    'intent://'+u.replace(/^https?:\\/\\//,'')+
-    '#Intent;scheme=https;package='+pkg+';end';
+  const tryIntent = (url,pkg) =>
+    tryOpen('intent://'+url.replace(/^https?:\\/\\//,'')+
+            '#Intent;scheme=https;package='+pkg+';end');
 
-  const android = {
-    chrome:   u=>intent(u,'com.android.chrome'),
-    edge:     u=>intent(u,'com.microsoft.emmx'),
-    brave:    u=>intent(u,'com.brave.browser'),
-    firefox:  u=>intent(u,'org.mozilla.firefox'),
-    opera:    u=>intent(u,'com.opera.browser'),
-    ddg:      u=>intent(u,'com.duckduckgo.mobile.android')
-  };
+  const tryScheme = (url,scheme) => tryOpen(scheme);
 
-  const ios = {
-    chrome:  u=>'googlechrome://'+u.replace(/^https?:\\/\\//,''),
-    edge:    u=>'microsoft-edge-http://'+u.replace(/^https?:\\/\\//,''),
-    brave:   u=>'brave://open-url?url='+encodeURIComponent(u),
-    firefox: u=>'firefox://open-url?url='+encodeURIComponent(u)
+  const tryShare = async url => {
+    if (!navigator.share) return false;
+    try{ await navigator.share({url}); return true; }catch{ return false; }
   };
 
   async function kickOut(url){
-    /* 0) anchor trick */
-    if (clickAnchor(url)) return;
+    /* 1) standard */
+    if (tryOpen(url)) return;
 
-    /* 1) Android intenty */
-    if (isAndroid){
-      for (const fn of Object.values(android)) if (clickAnchor(fn(url))) return;
-    }
+    /* 2) Android intent (Chrome) */
+    if (isAndroid && tryIntent(url,'com.android.chrome')) return;
 
-    /* 2) iOS custom schemes */
-    if (isiOS){
-      for (const fn of Object.values(ios)) if (clickAnchor(fn(url))) return;
-    }
+    /* 3) explicit schemes */
+    if (isiOS && tryScheme(url,'googlechrome://'+url.replace(/^https?:\\/\\//,''))) return;
+    if (tryIntent(url,'org.mozilla.firefox') ||
+        tryIntent(url,'com.microsoft.emmx')  ||
+        tryIntent(url,'com.brave.browser')) return;
 
-    /* 3) share‑sheet as fallback */
-    if (navigator.share){
-      try { await navigator.share({url}); return; } catch{}
-    }
+    /* 4) share‑sheet */
+    if (await tryShare(url)) return;
 
-    /* 4) WebView fallback */
+    /* 5) fallback inside WebView */
     location.href = url;
     document.getElementById('help-msg').style.display='block';
   }
 
-  /* ---------- popup & link handlers ---------- */
-  $(document).on('click','[open-popup]',function(){ $(this).find('.popup').fadeIn(180); });
-  $(document).on('click','[close-popup]',function(e){ e.preventDefault(); e.stopPropagation(); $(this).closest('.popup').fadeOut(180); });
-
-  $(document).on('click','.continue-btn',function(e){
-    e.preventDefault(); e.stopPropagation();
-    kickOut(this.dataset.target || '${FALLBACK_URL}');
-    $(this).closest('.popup').fadeOut(150);
+  /* ---------- popup logika ---------- */
+  document.querySelectorAll('[open-popup]').forEach(el=>{
+    el.addEventListener('click',()=> el.querySelector('.popup').style.display='block');
+  });
+  document.querySelectorAll('[close-popup]').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.preventDefault(); e.stopPropagation();
+      el.closest('.popup').style.display='none';
+    });
   });
 
-  $(document).on('click','a.link:not([open-popup])',function(e){
-    if (isIG){ e.preventDefault(); kickOut(this.href); }
+  /* ---------- tlačítko Pokračovat (ONLYFANS) ---------- */
+  document.querySelector('.continue-btn').addEventListener('click',e=>{
+    e.preventDefault(); e.stopPropagation();
+    const url = e.currentTarget.dataset.target || '${FALLBACK_URL}';
+    isIG ? kickOut(url) : window.open(url,'_blank','noopener,noreferrer');
+    e.currentTarget.closest('.popup').style.display='none';
   });
 })();
 </script>
