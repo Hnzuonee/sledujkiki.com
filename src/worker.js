@@ -24,7 +24,6 @@ return `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
 
-  <!-- Původní CSS -->
   <link rel="stylesheet" href="https://minisoft-cdn.pages.dev/sw/css/normalize.css">
   <link rel="stylesheet" href="https://minisoft-cdn.pages.dev/sw/css/custom.css">
   <link rel="stylesheet" href="https://minisoft-cdn.pages.dev/sw/css/components.css">
@@ -44,6 +43,7 @@ return `<!DOCTYPE html>
     <p class="paragraph">Modelka <span class="_2nd-paragraph">&amp;</span> digitální tvůrkyně</p>
 
     <div class="w-layout-grid link-list">
+
       <!-- ONLYFANS (age‑gate) -->
       <div class="link focus" open-popup="true">
         <div class="popup">
@@ -52,10 +52,9 @@ return `<!DOCTYPE html>
             <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
-              <!-- href nastaveno stejnou URL jako data-target -->
-              <a  class="button w-button continue-btn"
-                  data-target="https://onlyfans.com/jentvojekiks"
-                  href="https://onlyfans.com/jentvojekiks">Pokračovat</a>
+              <a class="button w-button continue-btn"
+                 data-target="https://onlyfans.com/jentvojekiks"
+                 href="https://onlyfans.com/jentvojekiks">Pokračovat</a>
             </div>
           </div>
         </div>
@@ -63,7 +62,7 @@ return `<!DOCTYPE html>
         <div class="label">Exkluzivní obsah</div><div class="arrow focus"></div>
       </div>
 
-      <!-- Ostatní odkazy (bez popupu) -->
+      <!-- Další odkazy (bez popupu) -->
       <a class="link w-inline-block" href="https://t.me/+E-WSR-s-L1EyOTNk">
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/telegram.webp" alt="">
         <div class="label">Telegram</div><div class="arrow"></div>
@@ -88,8 +87,8 @@ return `<!DOCTYPE html>
 </main>
 
 <div id="help-msg" style="display:none;text-align:center;padding:1rem;font-size:.9rem;color:#555">
-  Pokud stále vidíš tuto stránku, klepni v&nbsp;Instagramu na <strong>⋮</strong> a&nbsp;vyber
-  <em>„Otevřít v&nbsp;prohlížeči“</em>.
+  Pokud stále vidíš tuto stránku, klepni v Instagramu na <strong>⋮</strong> a&nbsp;zvol
+  <em>„Otevřít v prohlížeči“</em>.
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
@@ -98,24 +97,43 @@ return `<!DOCTYPE html>
 
 <script>
 (() => {
-  const UA = navigator.userAgent || '';
-  const isiOS = /iP(hone|od|ad)/i.test(UA);
+  const UA        = navigator.userAgent || '';
+  const isiOS     = /iP(hone|od|ad)/i.test(UA);
   const isAndroid = /Android/i.test(UA);
-  const isIG = /Instagram/i.test(UA);
+  const isIG      = /Instagram/i.test(UA);
 
-  const tryOpen = (url, fn) => !!window.open(fn(url), '_blank', 'noopener,noreferrer');
+  /* ---------- Kick‑out funkce (osvědčená) ---------- */
+  const tryWindowOpen   = u => !!window.open(u, '_blank', 'noopener,noreferrer');
+  const tryAndroidIntent= u => {
+    if (!isAndroid) return false;
+    const { host, pathname } = new URL(u);
+    return !!window.open(\`intent://\${host}\${pathname}#Intent;scheme=https;package=com.android.chrome;end\`,'_blank','noopener,noreferrer');
+  };
+  const tryChromeScheme = u => {
+    const scheme = isiOS ? 'googlechrome://' + u.replace(/^https?:\\/\\//,'')
+                         : u.replace(/^https?:\\/\\//,'googlechrome://');
+    return !!window.open(scheme, '_blank', 'noopener,noreferrer');
+  };
+  const tryFirefoxScheme= u => {
+    const scheme = isiOS ? 'firefox://open-url?url='+encodeURIComponent(u)
+                         : 'intent://'+u.replace(/^https?:\\/\\//,'')+'#Intent;scheme=https;package=org.mozilla.firefox;end';
+    return !!window.open(scheme, '_blank', 'noopener,noreferrer');
+  };
+  const tryShareSheet   = async u => {
+    if (!navigator.share) return false;
+    try { await navigator.share({url:u}); return true; } catch { return false; }
+  };
 
-  async function kickOut(url){
-    if (tryOpen(url,u=>u)) return;
-    if (isAndroid && tryOpen(url,u=>\`intent://\${new URL(u).host}\${new URL(u).pathname}#Intent;scheme=https;package=com.android.chrome;end\`)) return;
-    if (tryOpen(url,u=>isiOS ? 'googlechrome://'+u.replace(/^https?:\\/\\//,'') : u.replace(/^https?:\\/\\//,'googlechrome://'))) return;
-    if (tryOpen(url,u=>isiOS ? 'firefox://open-url?url='+encodeURIComponent(u) : 'intent://'+u.replace(/^https?:\\/\\//,'')+'#Intent;scheme=https;package=org.mozilla.firefox;end')) return;
-    if (navigator.share){ try{ await navigator.share({url}); return; }catch(e){} }
-    location.href = url;
+  async function kickOut(u){
+    if (tryWindowOpen(u)) return;
+    if (tryAndroidIntent(u)) return;
+    if (tryChromeScheme(u) || tryFirefoxScheme(u)) return;
+    if (await tryShareSheet(u)) return;
+    location.href = u;
     document.getElementById('help-msg').style.display='block';
   }
 
-  /* Popup ovládání */
+  /* ---------- Popup ovládání ---------- */
   $(document).on('click','[open-popup]',function(){ $(this).find('.popup').fadeIn(180); });
 
   $(document).on('click','[close-popup]',function(e){
@@ -125,14 +143,14 @@ return `<!DOCTYPE html>
 
   $(document).on('click','.continue-btn',function(e){
     e.preventDefault(); e.stopPropagation();
-    const attrUrl = this.getAttribute('data-target') || '';
-    const hrefUrl = this.getAttribute('href') || '';
-    const url = attrUrl || (/^https?:/i.test(hrefUrl) ? hrefUrl : '${FALLBACK_URL}');
-    $(this).closest('.popup').fadeOut(150);
+    const url = this.dataset.target || this.getAttribute('href') || '${FALLBACK_URL}';
+    /* 1) nejprve kick‑out (běží pod user gesture) */
     isIG ? kickOut(url) : (location.href = url);
+    /* 2) teprve pak schovej popup (vizuální efekt) */
+    $(this).closest('.popup').fadeOut(150);
   });
 
-  /* Přímé odkazy bez popupu */
+  /* ---------- Přímé odkazy ---------- */
   $(document).on('click','a.link:not([open-popup])',function(e){
     if (isIG){
       e.preventDefault();
