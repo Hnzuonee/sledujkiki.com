@@ -14,7 +14,7 @@ export default {
 };
 
 function html () {
-  const FALLBACK_URL = 'https://instagram.com';   // když někde zapomeneš URL
+  const FALLBACK_URL = 'https://instagram.com';
 
 return `<!DOCTYPE html>
 <html lang="cs">
@@ -36,6 +36,7 @@ return `<!DOCTYPE html>
 <main class="wrapper">
   <div class="pattern"></div>
   <div class="container">
+    <!-- ↓ profilovku nahraď vlastní URL nebo data‑URI -->
     <img class="propic" src="https://minisoft-cdn.pages.dev/sw/images/eva.webp" alt="Profilová fotka">
     <div class="title-wrapper">
       <h1 class="title">Kiki&nbsp;Booo</h1>
@@ -45,26 +46,25 @@ return `<!DOCTYPE html>
 
     <div class="w-layout-grid link-list">
 
-      <!-- ONLYFANS (jediný link s age‑gate) -->
+      <!-- ONLYFANS (s age‑gate) -->
       <div class="link focus" open-popup="true">
         <div class="popup">
           <div class="popup-content">
             <h1 class="popup-title">Citlivý obsah</h1>
-            <p class="popup-desc">Tento odkaz může vést k obsahu 18&nbsp;+.</p>
+            <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
-              <!-- změň URL v data-target -->
               <a href="#" class="button w-button continue-btn"
                  data-target="https://onlyfans.com/jentvojekiks">Pokračovat</a>
             </div>
           </div>
         </div>
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/onlyfans.webp" alt="">
-        <div class="label">Exkluzivní obsah</div>
+        <div class="label">Exkluzivní&nbsp;obsah</div>
         <div class="arrow focus"></div>
       </div>
 
-      <!-- Ostatní odkazy přímo -->
+      <!-- Ostatní odkazy (bez popupu) -->
       <a class="link w-inline-block" href="https://t.me/+E-WSR-s-L1EyOTNk">
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/telegram.webp" alt="">
         <div class="label">Telegram</div><div class="arrow"></div>
@@ -88,25 +88,27 @@ return `<!DOCTYPE html>
   </div>
 </main>
 
-<!-- Instrukce pro případný fallback -->
+<!-- Fallback instrukce -->
 <div id="help-msg" style="display:none;text-align:center;padding:1rem;font-size:.9rem;color:#555">
-  Pokud stále vidíš tuto stránku, klepni v Instagramu na <strong>⋮</strong> a vyber
-  <em>„Otevřít v prohlížeči“</em>.
+  Pokud stále vidíš tuto stránku, klepni v&nbsp;Instagramu na <strong>⋮</strong> a&nbsp;vyber
+  <em>„Otevřít v&nbsp;prohlížeči“</em>.
 </div>
 
-<!-- jQuery pro jednoduchost zůstává -->
+<!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+<!-- Skripty z původní šablony – zviditelní grid -->
+<script src="https://minisoft-cdn.pages.dev/sw/js/swsites.js"></script>
+<script src="https://minisoft-cdn.pages.dev/sw/js/scripts.js"></script>
 
+<!-- Kick‑out & popup logika -->
 <script>
 (() => {
-  /* ---------- detekce prostředí ---------- */
   const UA        = navigator.userAgent || '';
   const isiOS     = /iP(hone|od|ad)/i.test(UA);
   const isAndroid = /Android/i.test(UA);
   const isIG      = /Instagram/i.test(UA);
 
-  /* ---------- kick‑out helper ---------- */
-  const tryOpen = (url, schemeFn) => !!window.open(schemeFn(url), '_blank', 'noopener,noreferrer');
+  const tryOpen = (url, fn) => !!window.open(fn(url), '_blank', 'noopener,noreferrer');
 
   async function kickOut(url){
     if (tryOpen(url,u=>u)) return;
@@ -114,28 +116,27 @@ return `<!DOCTYPE html>
     if (tryOpen(url,u=>isiOS ? 'googlechrome://'+u.replace(/^https?:\\/\\//,'') : u.replace(/^https?:\\/\\//,'googlechrome://'))) return;
     if (tryOpen(url,u=>isiOS ? 'firefox://open-url?url='+encodeURIComponent(u) : 'intent://'+u.replace(/^https?:\\/\\//,'')+'#Intent;scheme=https;package=org.mozilla.firefox;end')) return;
     if (navigator.share){ try{ await navigator.share({url}); return; }catch(e){} }
-    location.href = url;          // poslední pokus – dovnitř IG
+    location.href = url;
     document.getElementById('help-msg').style.display='block';
   }
 
-  /* ---------- popup logika ---------- */
+  /* Popup show/hide */
   $(document).on('click','[open-popup]',function(){ $(this).find('.popup').fadeIn(180); });
   $(document).on('click','[close-popup]',function(e){ e.preventDefault(); $(this).closest('.popup').fadeOut(180); });
 
+  /* Age‑gate pokračovat */
   $(document).on('click','.continue-btn',function(e){
     e.preventDefault();
-    const btn = e.currentTarget;
-    const url = btn.dataset.target || btn.getAttribute('href') || '${FALLBACK_URL}';
-    $(btn).closest('.popup').fadeOut(150);
+    const url = this.dataset.target || this.getAttribute('href') || '${FALLBACK_URL}';
+    $(this).closest('.popup').fadeOut(150);
     isIG ? kickOut(url) : location.href = url;
   });
 
-  /* ---------- přímé odkazy bez popupu ---------- */
+  /* Přímé odkazy bez popupu */
   $(document).on('click','a.link:not([open-popup])',function(e){
-    const url = this.href;
     if (isIG){
       e.preventDefault();
-      kickOut(url);
+      kickOut(this.href);
     }
   });
 })();
