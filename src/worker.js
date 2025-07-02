@@ -70,7 +70,7 @@ function html () {
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
               <a href="#" class="button w-button continue-btn"
-                 data-target="YOUR_ONLYFANS_URL_HERE">Pokračovat</a>
+                 data-target="https://onlyfans.com/jentvojekiks">Pokračovat</a>
             </div>
           </div>
         </div>
