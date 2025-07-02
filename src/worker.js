@@ -1,7 +1,7 @@
 export default {
-  async fetch(request) {
-    const u = new URL(request.url);
-    if (u.pathname === '/go') {
+  async fetch(req) {
+    const path = new URL(req.url).pathname;
+    if (path === '/' || path === '/go') {
       return new Response(html(), {
         headers: {
           'content-type': 'text/html;charset=utf-8',
@@ -13,8 +13,9 @@ export default {
   }
 };
 
-function html() {
+function html () {
   const TARGET = 'https://www.seznam.cz';
+
   return `<!DOCTYPE html><html lang="cs">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Externí odkaz</title>
@@ -29,27 +30,67 @@ function html() {
 <button id="goBtn">Potvrzuji věk 18+</button>
 <div id="info">
   <p>Nepodařilo se otevřít externí prohlížeč.<br>
-     V Instagramu klepni na <strong>⋮</strong> a zvol
+     V Instagramu klepni na <strong>⋮</strong> a zvol
      <em>„Otevřít v prohlížeči“</em>.</p>
 </div>
 <script>
 (() => {
-  const TARGET_URL = ${JSON.stringify(TARGET)};
-  const isIG = () => /Instagram/i.test(navigator.userAgent);
-  const intent = u => {
-    if (!/Android/i.test(navigator.userAgent)) return false;
-    const { host, pathname } = new URL(u);
-    return !!window.open(\`intent://\${host}\${pathname}#Intent;scheme=https;package=com.android.chrome;end\`,
-                         '_blank','noopener,noreferrer');
+  const URL_TARGET   = ${JSON.stringify(TARGET)};
+  const UA           = navigator.userAgent || '';
+  const isiOS        = /iP(hone|od|ad)/i.test(UA);
+  const isAndroid    = /Android/i.test(UA);
+  const isInstagram  = /Instagram/i.test(UA);
+
+  /* --- Fallbacky --- */
+  const tryGoogleChromeScheme = url => {
+    if (!isiOS && !isAndroid) return false;
+    const schemeUrl = isiOS
+      ? 'googlechrome://' + url.replace(/^https?:\\/\\//,'')
+      : url.replace(/^https?:\\/\\/,'googlechrome://');
+    return !!window.open(schemeUrl, '_blank', 'noopener,noreferrer');
   };
-  const kick = u => {
-    const w = window.open(u,'_blank','noopener,noreferrer');
-    setTimeout(()=>{ if(document.visibilityState==='visible'){ if(!intent(u)) location.href=u; }},100);
-    setTimeout(()=>{ if(document.visibilityState==='visible') document.getElementById('info').style.display='block';},1000);
+
+  const tryFirefoxScheme = url => {
+    if (!isiOS && !isAndroid) return false;
+    const schemeUrl = isiOS
+      ? 'firefox://open-url?url=' + encodeURIComponent(url)
+      : 'intent://' + url.replace(/^https?:\\/\\//,'') + '#Intent;scheme=https;package=org.mozilla.firefox;end';
+    return !!window.open(schemeUrl, '_blank', 'noopener,noreferrer');
   };
-  document.getElementById('goBtn').onclick=e=>{
-    e.preventDefault(); isIG()?kick(TARGET_URL):location.replace(TARGET_URL);
+
+  const tryShareSheet = async url => {
+    if (!navigator.share) return false;
+    try { await navigator.share({ url }); return true; }
+    catch { return false; }
   };
+
+  const kickOut = async url => {
+    /* 1) standard */
+    const w = window.open(url, '_blank', 'noopener,noreferrer');
+    if (w) return;
+
+    /* 2) Android intent (již podporováno Safari‑grade) */
+    if (isAndroid) {
+      const { host, pathname } = new URL(url);
+      if (window.open(\`intent://\${host}\${pathname}#Intent;scheme=https;package=com.android.chrome;end\`,
+                      '_blank','noopener,noreferrer')) return;
+    }
+
+    /* 3) explicit schemes */
+    if (tryGoogleChromeScheme(url) || tryFirefoxScheme(url)) return;
+
+    /* 4) Share sheet */
+    if (await tryShareSheet(url)) return;
+
+    /* 5) fallback uvnitř WebView */
+    document.getElementById('info').style.display = 'block';
+  };
+
+  document.getElementById('goBtn').addEventListener('click', e => {
+    e.preventDefault();
+    isInstagram ? kickOut(URL_TARGET) : (location.href = URL_TARGET);
+  });
 })();
-</script></body></html>`;
+</script>
+</body></html>`;
 }
