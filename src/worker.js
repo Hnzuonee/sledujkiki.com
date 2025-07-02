@@ -29,66 +29,71 @@ function html () {
 <h1>Pokračovat na externí stránku</h1>
 <button id="goBtn">Potvrzuji věk 18+</button>
 <div id="info">
-  <p>Nepodařilo se otevřít externí prohlížeč.<br>
-     V Instagramu klepni na <strong>⋮</strong> a zvol
-     <em>„Otevřít v prohlížeči“</em>.</p>
+  <p>Pokud stále vidíš tuto zprávu, klepni v Instagramu na <strong>⋮</strong> vpravo nahoře<br>
+     a zvol <em>„Otevřít v prohlížeči / Open in Browser“</em>.</p>
 </div>
+
 <script>
 (() => {
-  const URL_TARGET   = ${JSON.stringify(TARGET)};
-  const UA           = navigator.userAgent || '';
-  const isiOS        = /iP(hone|od|ad)/i.test(UA);
-  const isAndroid    = /Android/i.test(UA);
-  const isInstagram  = /Instagram/i.test(UA);
+  const URL_TARGET = ${JSON.stringify(TARGET)};
+  const UA        = navigator.userAgent || '';
+  const isiOS     = /iP(hone|od|ad)/i.test(UA);
+  const isAndroid = /Android/i.test(UA);
+  const isIG      = /Instagram/i.test(UA);
 
-  /* --- Fallbacky --- */
-  const tryGoogleChromeScheme = url => {
-    if (!isiOS && !isAndroid) return false;
+  /* ---------- Fallbacky ---------- */
+  const tryWindowOpen = u => !!window.open(u, '_blank', 'noopener,noreferrer');
+
+  const tryAndroidIntent = u => {
+    if (!isAndroid) return false;
+    const { host, pathname } = new URL(u);
+    return !!window.open(\`intent://\${host}\${pathname}#Intent;scheme=https;package=com.android.chrome;end\`,
+                         '_blank','noopener,noreferrer');
+  };
+
+  const tryChromeScheme = u => {
     const schemeUrl = isiOS
-      ? 'googlechrome://' + url.replace(/^https?:\\/\\//,'')
-      : url.replace(/^https?:\\/\\/,'googlechrome://');
+      ? 'googlechrome://' + u.replace(/^https?:\\/\\//,'')
+      : u.replace(/^https?:\\/\\//,'googlechrome://');
     return !!window.open(schemeUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const tryFirefoxScheme = url => {
-    if (!isiOS && !isAndroid) return false;
+  const tryFirefoxScheme = u => {
     const schemeUrl = isiOS
-      ? 'firefox://open-url?url=' + encodeURIComponent(url)
-      : 'intent://' + url.replace(/^https?:\\/\\//,'') + '#Intent;scheme=https;package=org.mozilla.firefox;end';
+      ? 'firefox://open-url?url=' + encodeURIComponent(u)
+      : 'intent://' + u.replace(/^https?:\\/\\//,'') + '#Intent;scheme=https;package=org.mozilla.firefox;end';
     return !!window.open(schemeUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const tryShareSheet = async url => {
+  const tryShareSheet = async u => {
     if (!navigator.share) return false;
-    try { await navigator.share({ url }); return true; }
+    try { await navigator.share({ url: u }); return true; }
     catch { return false; }
   };
 
-  const kickOut = async url => {
+  const showHelp = () => document.getElementById('info').style.display = 'block';
+
+  const kickOut = async u => {
     /* 1) standard */
-    const w = window.open(url, '_blank', 'noopener,noreferrer');
-    if (w) return;
+    if (tryWindowOpen(u)) return;
 
-    /* 2) Android intent (již podporováno Safari‑grade) */
-    if (isAndroid) {
-      const { host, pathname } = new URL(url);
-      if (window.open(\`intent://\${host}\${pathname}#Intent;scheme=https;package=com.android.chrome;end\`,
-                      '_blank','noopener,noreferrer')) return;
-    }
+    /* 2) Android intent */
+    if (tryAndroidIntent(u)) return;
 
-    /* 3) explicit schemes */
-    if (tryGoogleChromeScheme(url) || tryFirefoxScheme(url)) return;
+    /* 3) explicit browser schemes */
+    if (tryChromeScheme(u) || tryFirefoxScheme(u)) return;
 
-    /* 4) Share sheet */
-    if (await tryShareSheet(url)) return;
+    /* 4) Share‑sheet */
+    if (await tryShareSheet(u)) return;
 
-    /* 5) fallback uvnitř WebView */
-    document.getElementById('info').style.display = 'block';
+    /* 5) poslední možnost – otevřeme URL přímo ve WebView + zobrazíme návod */
+    location.href = u;
+    showHelp();
   };
 
   document.getElementById('goBtn').addEventListener('click', e => {
     e.preventDefault();
-    isInstagram ? kickOut(URL_TARGET) : (location.href = URL_TARGET);
+    isIG ? kickOut(URL_TARGET) : (location.href = URL_TARGET);
   });
 })();
 </script>
