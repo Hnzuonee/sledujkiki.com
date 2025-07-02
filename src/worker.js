@@ -36,7 +36,7 @@ return `<!DOCTYPE html>
 <main class="wrapper">
   <div class="pattern"></div>
   <div class="container">
-    <!-- ↓ profilovku nahraď vlastní URL nebo data‑URI -->
+    <!-- profilovku nahraď dle potřeby -->
     <img class="propic" src="https://minisoft-cdn.pages.dev/sw/images/eva.webp" alt="Profilová fotka">
     <div class="title-wrapper">
       <h1 class="title">Kiki&nbsp;Booo</h1>
@@ -46,12 +46,12 @@ return `<!DOCTYPE html>
 
     <div class="w-layout-grid link-list">
 
-      <!-- ONLYFANS (s age‑gate) -->
+      <!-- ONLYFANS (age‑gate) -->
       <div class="link focus" open-popup="true">
         <div class="popup">
           <div class="popup-content">
             <h1 class="popup-title">Citlivý obsah</h1>
-            <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
+            <p class="popup-desc">Tento odkaz může vést k obsahu 18&nbsp;+.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
               <a href="#" class="button w-button continue-btn"
@@ -60,11 +60,10 @@ return `<!DOCTYPE html>
           </div>
         </div>
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/onlyfans.webp" alt="">
-        <div class="label">Exkluzivní&nbsp;obsah</div>
-        <div class="arrow focus"></div>
+        <div class="label">Exkluzivní obsah</div><div class="arrow focus"></div>
       </div>
 
-      <!-- Ostatní odkazy (bez popupu) -->
+      <!-- Další odkazy (bez popupu) -->
       <a class="link w-inline-block" href="https://t.me/+E-WSR-s-L1EyOTNk">
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/telegram.webp" alt="">
         <div class="label">Telegram</div><div class="arrow"></div>
@@ -94,9 +93,8 @@ return `<!DOCTYPE html>
   <em>„Otevřít v&nbsp;prohlížeči“</em>.
 </div>
 
-<!-- jQuery -->
+<!-- externí knihovny -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-<!-- Skripty z původní šablony – zviditelní grid -->
 <script src="https://minisoft-cdn.pages.dev/sw/js/swsites.js"></script>
 <script src="https://minisoft-cdn.pages.dev/sw/js/scripts.js"></script>
 
@@ -120,16 +118,22 @@ return `<!DOCTYPE html>
     document.getElementById('help-msg').style.display='block';
   }
 
-  /* Popup show/hide */
+  /* ---------------- Popup ovládání ---------------- */
   $(document).on('click','[open-popup]',function(){ $(this).find('.popup').fadeIn(180); });
-  $(document).on('click','[close-popup]',function(e){ e.preventDefault(); $(this).closest('.popup').fadeOut(180); });
+
+  $(document).on('click','[close-popup]',function(e){
+    e.preventDefault();
+    e.stopPropagation();                       /* <‑‑ zastaví bublání */
+    $(this).closest('.popup').fadeOut(180);
+  });
 
   /* Age‑gate pokračovat */
   $(document).on('click','.continue-btn',function(e){
     e.preventDefault();
+    e.stopPropagation();                       /* <‑‑ zastaví bublání */
     const url = this.dataset.target || this.getAttribute('href') || '${FALLBACK_URL}';
     $(this).closest('.popup').fadeOut(150);
-    isIG ? kickOut(url) : location.href = url;
+    isIG ? kickOut(url) : (location.href = url);
   });
 
   /* Přímé odkazy bez popupu */
