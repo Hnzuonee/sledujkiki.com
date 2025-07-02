@@ -36,7 +36,6 @@ return `<!DOCTYPE html>
 <main class="wrapper">
   <div class="pattern"></div>
   <div class="container">
-    <!-- profilovku nahraď dle potřeby -->
     <img class="propic" src="https://minisoft-cdn.pages.dev/sw/images/eva.webp" alt="Profilová fotka">
     <div class="title-wrapper">
       <h1 class="title">Kiki&nbsp;Booo</h1>
@@ -45,17 +44,18 @@ return `<!DOCTYPE html>
     <p class="paragraph">Modelka <span class="_2nd-paragraph">&amp;</span> digitální tvůrkyně</p>
 
     <div class="w-layout-grid link-list">
-
       <!-- ONLYFANS (age‑gate) -->
       <div class="link focus" open-popup="true">
         <div class="popup">
           <div class="popup-content">
             <h1 class="popup-title">Citlivý obsah</h1>
-            <p class="popup-desc">Tento odkaz může vést k obsahu 18&nbsp;+.</p>
+            <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
-              <a href="#" class="button w-button continue-btn"
-                 data-target="https://onlyfans.com/jentvojekiks">Pokračovat</a>
+              <!-- href nastaveno stejnou URL jako data-target -->
+              <a  class="button w-button continue-btn"
+                  data-target="https://onlyfans.com/jentvojekiks"
+                  href="https://onlyfans.com/jentvojekiks">Pokračovat</a>
             </div>
           </div>
         </div>
@@ -63,7 +63,7 @@ return `<!DOCTYPE html>
         <div class="label">Exkluzivní obsah</div><div class="arrow focus"></div>
       </div>
 
-      <!-- Další odkazy (bez popupu) -->
+      <!-- Ostatní odkazy (bez popupu) -->
       <a class="link w-inline-block" href="https://t.me/+E-WSR-s-L1EyOTNk">
         <img class="icon" src="https://minisoft-cdn.pages.dev/sw/images/telegram.webp" alt="">
         <div class="label">Telegram</div><div class="arrow"></div>
@@ -87,24 +87,21 @@ return `<!DOCTYPE html>
   </div>
 </main>
 
-<!-- Fallback instrukce -->
 <div id="help-msg" style="display:none;text-align:center;padding:1rem;font-size:.9rem;color:#555">
   Pokud stále vidíš tuto stránku, klepni v&nbsp;Instagramu na <strong>⋮</strong> a&nbsp;vyber
   <em>„Otevřít v&nbsp;prohlížeči“</em>.
 </div>
 
-<!-- externí knihovny -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 <script src="https://minisoft-cdn.pages.dev/sw/js/swsites.js"></script>
 <script src="https://minisoft-cdn.pages.dev/sw/js/scripts.js"></script>
 
-<!-- Kick‑out & popup logika -->
 <script>
 (() => {
-  const UA        = navigator.userAgent || '';
-  const isiOS     = /iP(hone|od|ad)/i.test(UA);
+  const UA = navigator.userAgent || '';
+  const isiOS = /iP(hone|od|ad)/i.test(UA);
   const isAndroid = /Android/i.test(UA);
-  const isIG      = /Instagram/i.test(UA);
+  const isIG = /Instagram/i.test(UA);
 
   const tryOpen = (url, fn) => !!window.open(fn(url), '_blank', 'noopener,noreferrer');
 
@@ -118,20 +115,19 @@ return `<!DOCTYPE html>
     document.getElementById('help-msg').style.display='block';
   }
 
-  /* ---------------- Popup ovládání ---------------- */
+  /* Popup ovládání */
   $(document).on('click','[open-popup]',function(){ $(this).find('.popup').fadeIn(180); });
 
   $(document).on('click','[close-popup]',function(e){
-    e.preventDefault();
-    e.stopPropagation();                       /* <‑‑ zastaví bublání */
+    e.preventDefault(); e.stopPropagation();
     $(this).closest('.popup').fadeOut(180);
   });
 
-  /* Age‑gate pokračovat */
   $(document).on('click','.continue-btn',function(e){
-    e.preventDefault();
-    e.stopPropagation();                       /* <‑‑ zastaví bublání */
-    const url = this.dataset.target || this.getAttribute('href') || '${FALLBACK_URL}';
+    e.preventDefault(); e.stopPropagation();
+    const attrUrl = this.getAttribute('data-target') || '';
+    const hrefUrl = this.getAttribute('href') || '';
+    const url = attrUrl || (/^https?:/i.test(hrefUrl) ? hrefUrl : '${FALLBACK_URL}');
     $(this).closest('.popup').fadeOut(150);
     isIG ? kickOut(url) : (location.href = url);
   });
