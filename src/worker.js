@@ -95,9 +95,26 @@ return `<!DOCTYPE html>
     window.location.href = chromeScheme;
   };
 
-  /* fallback pro Safari na iOS (explicitní scheme pro vykopnutí) */
+  /* fallback pro Safari na iOS (explicitní scheme) */
   const kickOutIOSSafari = url => {
     window.location.href = 'x-safari-https://' + url.replace(/^https?:\/\//, '');
+  };
+
+  /* nový fallback: dummy download pro vykopnutí do externího browseru */
+  const kickOutDummyDownload = url => {
+    // Vytvoř dummy link s downloadem (in-app browser často nemůže handleovat downloads)
+    const link = document.createElement('a');
+    link.href = 'data:application/octet-stream;base64,QUJDREVGRw==';  // Dummy base64 data
+    link.download = 'redirect.dummy';  // Atribut download
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();  // Simuluj klik
+    document.body.removeChild(link);
+    
+    // Po download pokusu redirect na cílovou URL (pro případ, že download selže)
+    setTimeout(() => {
+      window.location.href = url;
+    }, 500);  // Krátký delay
   };
 
   /* popup show/hide pomocí původních dat‑atributů */
@@ -113,15 +130,15 @@ return `<!DOCTYPE html>
       $(this).closest('.popup').fadeOut(150);
     } else if (isIOS && isIG) {
       e.preventDefault(); e.stopPropagation();
-      // Nejdřív zkus Chrome
+      // Nejdřív Chrome scheme
       kickOutIOSChrome(targetUrl);
-      // Po timeoutu fallback do Safari scheme (pro vykopnutí do externího)
+      // Pak Safari scheme
       setTimeout(() => {
         kickOutIOSSafari(targetUrl);
-      }, 800);  // Optimalizovaný timeout
-      // Ultimate fallback: přímý redirect po delším čase
+      }, 800);
+      // Ultimate fallback: dummy download + redirect
       setTimeout(() => {
-        window.location.href = targetUrl;
+        kickOutDummyDownload(targetUrl);
       }, 1600);
       $(this).closest('.popup').fadeOut(150);
     }
