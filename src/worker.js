@@ -43,7 +43,7 @@ return `<!DOCTYPE html>
             <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
-              <!-- URL měň jen v href -->
+              <!-- URL měň jen v&nbsp;href -->
               <a class="button w-button continue-link" target="_blank"
                  href="https://onlyfans.com/test">Pokračovat</a>
             </div>
@@ -78,13 +78,31 @@ return `<!DOCTYPE html>
 (() => {
   const UA        = navigator.userAgent || '';
   const isAndroid = /Android/i.test(UA);
+  const isIOS     = /iPad|iPhone|iPod/.test(UA) && !window.MSStream;
   const isIG      = /Instagram/i.test(UA);
 
   /* cílený kick‑out jen pro Android‑IG */
   const kickOutAndroid = url => {
-    const intent = 'intent://' + url.replace(/^https?:\\/\\//,'')
+    const intent = 'intent://' + url.replace(/^https?:\/\//,'')
                  + '#Intent;scheme=https;package=com.android.chrome;end';
     window.location.href = intent;
+  };
+
+  /* kick-out pro iOS-IG do Chrome, pokud nainstalován */
+  const kickOutIOSChrome = url => {
+    const chromeScheme = (url.startsWith('https') ? 'googlechromes' : 'googlechrome') 
+                       + '://' + url.replace(/^https?:\/\//, '');
+    window.location.href = chromeScheme;
+  };
+
+  /* fallback pro Safari na iOS (novější scheme) */
+  const kickOutIOSSafariNew = url => {
+    window.location.href = 'x-safari-https://' + url.replace(/^https?:\/\//, '');
+  };
+
+  /* fallback pro Safari na iOS (legacy scheme) */
+  const kickOutIOSSafariLegacy = url => {
+    window.location.href = 'com-apple-mobilesafari-tab:' + url;
   };
 
   /* popup show/hide pomocí původních dat‑atributů */
@@ -93,13 +111,30 @@ return `<!DOCTYPE html>
 
   /* klik na "Pokračovat" */
   $(document).on('click','.continue-link',function(e){
+    const targetUrl = this.href;
     if (isAndroid && isIG){
-      /* zabráníme defaultu a pošleme intent */
       e.preventDefault(); e.stopPropagation();
-      kickOutAndroid(this.href);
+      kickOutAndroid(targetUrl);
+      $(this).closest('.popup').fadeOut(150);
+    } else if (isIOS && isIG) {
+      e.preventDefault(); e.stopPropagation();
+      // Nejdřív Chrome
+      kickOutIOSChrome(targetUrl);
+      // Pak novější Safari scheme
+      setTimeout(() => {
+        kickOutIOSSafariNew(targetUrl);
+      }, 600);
+      // Pak legacy Safari scheme
+      setTimeout(() => {
+        kickOutIOSSafariLegacy(targetUrl);
+      }, 1200);
+      // Ultimate fallback: přímý redirect
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 2000);
       $(this).closest('.popup').fadeOut(150);
     }
-    /* iOS + desktop + mimo IG: necháme anchor normálně otevřít (_blank) */
+    /* Ostatní: normálně otevřít */
   });
 })();
 </script>
