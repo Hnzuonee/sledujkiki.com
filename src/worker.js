@@ -45,7 +45,7 @@ return `<!DOCTYPE html>
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
               <!-- URL měň jen v href -->
               <a class="button w-button continue-link" target="_blank"
-                 href="https://onlyfans.com/jentvojekiks">Pokračovat</a>
+                 href="https://onlyfans.com/test">Pokračovat</a>
             </div>
           </div>
         </div>
