@@ -31,8 +31,8 @@ return `<!DOCTYPE html>
   <div class="pattern"></div>
   <div class="container">
     <img class="propic" src="https://minisoft-cdn.pages.dev/sw/images/eva.webp" alt="">
-    <div class="title-wrapper"><h1 class="title">Kiki&nbsp;Booo</h1><img class="badge" src="https://minisoft-cdn.pages.dev/sw/images/badge.svg"></div>
-    <p class="paragraph">Modelka <span class="_2nd-paragraph">&amp;</span> digitální tvůrkyně</p>
+    <div class="title-wrapper"><h1 class="title">Kiki Booo</h1><img class="badge" src="https://minisoft-cdn.pages.dev/sw/images/badge.svg"></div>
+    <p class="paragraph">Modelka <span class="_2nd-paragraph">&</span> digitální tvůrkyně</p>
 
     <div class="w-layout-grid link-list">
       <!-- ONLYFANS -->
@@ -40,10 +40,10 @@ return `<!DOCTYPE html>
         <div class="popup">
           <div class="popup-content">
             <h1 class="popup-title">Citlivý obsah</h1>
-            <p class="popup-desc">Tento odkaz může vést k&nbsp;obsahu 18&nbsp;+.</p>
+            <p class="popup-desc">Tento odkaz může vést k obsahu 18 +.</p>
             <div class="button-wrapper">
               <a href="#" class="button light w-button" close-popup="true">Zpět</a>
-              <!-- URL měň jen v&nbsp;href -->
+              <!-- URL měň jen v href -->
               <a class="button w-button continue-link" target="_blank"
                  href="https://onlyfans.com/test">Pokračovat</a>
             </div>
@@ -95,14 +95,9 @@ return `<!DOCTYPE html>
     window.location.href = chromeScheme;
   };
 
-  /* fallback pro Safari na iOS (novější scheme) */
-  const kickOutIOSSafariNew = url => {
+  /* fallback pro Safari na iOS (explicitní scheme pro vykopnutí) */
+  const kickOutIOSSafari = url => {
     window.location.href = 'x-safari-https://' + url.replace(/^https?:\/\//, '');
-  };
-
-  /* fallback pro Safari na iOS (legacy scheme) */
-  const kickOutIOSSafariLegacy = url => {
-    window.location.href = 'com-apple-mobilesafari-tab:' + url;
   };
 
   /* popup show/hide pomocí původních dat‑atributů */
@@ -118,23 +113,19 @@ return `<!DOCTYPE html>
       $(this).closest('.popup').fadeOut(150);
     } else if (isIOS && isIG) {
       e.preventDefault(); e.stopPropagation();
-      // Nejdřív Chrome
+      // Nejdřív zkus Chrome
       kickOutIOSChrome(targetUrl);
-      // Pak novější Safari scheme
+      // Po timeoutu fallback do Safari scheme (pro vykopnutí do externího)
       setTimeout(() => {
-        kickOutIOSSafariNew(targetUrl);
-      }, 600);
-      // Pak legacy Safari scheme
-      setTimeout(() => {
-        kickOutIOSSafariLegacy(targetUrl);
-      }, 1200);
-      // Ultimate fallback: přímý redirect
+        kickOutIOSSafari(targetUrl);
+      }, 800);  // Optimalizovaný timeout
+      // Ultimate fallback: přímý redirect po delším čase
       setTimeout(() => {
         window.location.href = targetUrl;
-      }, 2000);
+      }, 1600);
       $(this).closest('.popup').fadeOut(150);
     }
-    /* Ostatní: normálně otevřít */
+    /* Ostatní: normálně otevřít v _blank */
   });
 })();
 </script>
